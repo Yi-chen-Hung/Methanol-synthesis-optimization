@@ -1,0 +1,59 @@
+import pandas as pd
+import numpy as np
+# Read different syngas pattern input data
+df_insert_up= pd.read_excel('methanol_results_ptx_control_01_inert_up.xlsx',sheet_name='Tabelle1') 
+df_osci= pd.read_excel('methanol_results_ptx_control_01_osci.xlsx',sheet_name='Tabelle1')
+df_profil= pd.read_excel('methanol_results_ptx_control_01_profil.xlsx',sheet_name='Tabelle1')
+df_rauf= pd.read_excel('methanol_results_ptx_control_01_rauf.xlsx',sheet_name='Tabelle1')
+df_runter= pd.read_excel('methanol_results_ptx_control_01_runter.xlsx',sheet_name='Tabelle1') 
+for i in ['insert_up','osci','profil','rauf','runter']:
+    name=globals()[f"df_{i}"]
+    object_column = name.select_dtypes(include=['object']).columns
+    for col in object_column:
+       name[col] = pd.to_numeric(name[col], errors='coerce') # NaN for invalid values
+
+# Different syngas pattern flowrate data mining
+for i in ['profil']:
+    SYNGAS=globals()[f"df_{i}"].filter(like='Time').dropna().join(globals()[f"df_{i}"].filter(like='SYNGAS').dropna())
+    # syngas mole flow composition (H2,CO2,N2)
+    Recycle=globals()[f"df_{i}"].filter(like='Time').dropna().join(globals()[f"df_{i}"].filter(like='S5').dropna())
+    # after seperation recycle mole flow composition (CO,CO2,H2,N2)
+    RCT_IN=globals()[f"df_{i}"].filter(like='Time').dropna().join(globals()[f"df_{i}"].filter(like='RCT-IN').dropna())
+    # reactor inlet mole flow percentage (CO,CO2,H2)
+    RCT_OUT=globals()[f"df_{i}"].filter(like='Time').dropna().join(globals()[f"df_{i}"].filter(like='RCT-OUT').dropna())
+    # reactor outlet mole flow (CO,CO2,H2)
+    FL_IN=globals()[f"df_{i}"].filter(like='Time').dropna().join(globals()[f"df_{i}"].filter(like='FL-IN').dropna())
+    # Flash drum inlet flow (CO,CO2,H2,H2O,CH3OH,N2) 
+
+# Based on 
+A = np.array([
+    [0, -1, 1],       # Equation 1: -x2 + x3 =  increase of CO mole 
+    [1, 0, 1],        # Equation 2: x1 + x3 = usage of CO2 mole
+    [3, 2, 1]        # Equation 3: 3x1 + 2x2 + x3 = usage of H2 mole
+])
+
+df_new=globals()[f"df_{i}"].dropna().join(pd.DataFrame(columns=['Methanol selectivity %','CO2 conversion rate %']))  # add target parameter to old dataframe
+
+for n in range(1,len(RCT_IN)+1):
+    Totalmoleflow=RCT_IN.loc[n,'STREAMS("RCT-IN").F']
+    CO=Totalmoleflow*(RCT_OUT.loc[n,'STREAMS("RCT-OUTH").Zn("CO")']-RCT_IN.loc[n,'STREAMS("RCT-IN").Zn("CO")'])
+    CO2=Totalmoleflow*(RCT_IN.loc[n,'STREAMS("RCT-IN").Zn("CO2")']-RCT_OUT.loc[n,'STREAMS("RCT-OUTH").Zn("CO2")'])
+    H2=Totalmoleflow*(RCT_IN.loc[n,'STREAMS("RCT-IN").Zn("H2")']-RCT_OUT.loc[n,'STREAMS("RCT-OUTH").Zn("H2")'])
+    b = np.array([
+        CO,
+        CO2,         
+        H2,
+        ])
+    # Solve the linear system Ax = b using least squares
+    x, residuals, rank, s = np.linalg.lstsq(A, b, rcond=None)
+    
+    # Unpack the solution
+    x1, x2, x3 = x
+    # Methanol selectivity from CO2
+    selectivity = x1 / (x1 + x3) * 100
+    # CO2 conversion rate
+    CO2_in = Totalmoleflow*(RCT_IN.loc[n,'STREAMS("RCT-IN").Zn("CO2")'])
+    CO2_conv = (x1 + x3) / CO2_in * 100
+    df_new.loc[n,'Methanol selectivity %']=selectivity
+    df_new.loc[n,'CO2 conversion rate %']=CO2_conv
+df_new
