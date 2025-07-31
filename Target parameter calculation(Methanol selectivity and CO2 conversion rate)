@@ -97,5 +97,4 @@ fig.update_layout(
                 anchor='x', overlaying='y', side='right'),
     legend=dict(x=0.01, y=0.99)
 )
-
-fig.show()
+![image](https://github.com/Yi-chen-Hung/Methanol-synthesis-optimization/blob/main/Methanol%20selectivity.png)
