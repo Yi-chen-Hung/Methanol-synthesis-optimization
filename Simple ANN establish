@@ -1,0 +1,99 @@
+# Artifical Neural Network (Nonlinear ANN with 1 hidden layer, Levenberg-Marquardt algorithm, train/test sets, activation function: tanh)
+import pandas as pd
+import numpy as np
+from scipy.optimize import least_squares
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.model_selection import train_test_split
+
+# ---------------------------
+# 1. Load dataset
+# ---------------------------
+input_cols = ['STREAMS("SYNGAS").Fcn("H2")','STREAMS("SYNGAS").Fcn("CO2")','BLOCKS("FEHE").Q']  # Training parameters
+output_col = 'Methanol selectivity %'        # Target parameter
+
+X = df_new[input_cols].to_numpy()
+y = df_new[output_col].to_numpy(dtype=float)
+
+# ---------------------------
+# 2. Train/test split
+# ---------------------------
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# ---------------------------
+# 3. Define 1-hidden-layer ANN
+# ---------------------------
+def one_hidden_forward(p, X, d, h):
+    """
+    Forward pass for 1-hidden-layer ANN:
+    Input -> tanh(hidden) -> linear output
+    p: parameter vector(all network parameters packed into one vector)
+    d: input dimention
+    h: hidden dimention
+    """
+    # Unpack parameters
+    idx = 0
+    W1 = p[idx: idx + d*h].reshape(d, h); idx += d*h
+    b1 = p[idx: idx + h]; idx += h
+    W2 = p[idx: idx + h]; idx += h
+    b2 = p[idx]  # scalar bias
+
+    # Hidden layer
+    H = np.tanh(X @ W1 + b1)  # (m, h)
+
+    # Output layer (linear)
+    y_hat = H @ W2 + b2       # (m,)
+    return y_hat
+
+def residuals_nonlinear(p, X, y, d, h):
+    """
+    Residual vector for LM: y_hat - y
+    """
+    return one_hidden_forward(p, X, d, h) - y
+
+# ---------------------------
+# 4. Initialize parameters
+# ---------------------------
+d = X_train.shape[1]     # input dimension
+h = 5                    # number of hidden neurons (tuneable)
+
+# Total params: W1(d*h) + b1(h) + W2(h) + b2(1)
+n_params = d*h + h + h + 1
+p0 = np.random.randn(n_params) * 0.1  # small random init
+
+# ---------------------------
+# 5. Fit with LM (numerical Jacobian)
+# ---------------------------
+result = least_squares(
+    fun=residuals_nonlinear,
+    x0=p0, #initial guess for every parameter
+    args=(X_train, y_train, d, h),
+    method='lm'
+)
+
+print("LM status:", result.message)
+
+# ---------------------------
+# 6. Evaluate performance
+# ---------------------------
+# Train set
+y_train_pred = one_hidden_forward(result.x, X_train, d, h)
+mse_train = mean_squared_error(y_train, y_train_pred)
+r2_train  = r2_score(y_train, y_train_pred)
+
+# Test set
+y_test_pred = one_hidden_forward(result.x, X_test, d, h)
+mse_test = mean_squared_error(y_test, y_test_pred)
+r2_test  = r2_score(y_test, y_test_pred)
+
+print("\nPerformance:")
+print(f"Train MSE: {mse_train:.4f}, Train R²: {r2_train:.4f}")
+print(f"Test  MSE: {mse_test:.4f}, Test  R²: {r2_test:.4f}")
+
+# ---------------------------
+# 7. Predict on new samples
+# ---------------------------
+X_new = df_new[input_cols].iloc[:3].to_numpy()
+y_new_pred = one_hidden_forward(result.x, X_new, d, h)
+print("\nPredictions for first 3 samples:", y_new_pred)
