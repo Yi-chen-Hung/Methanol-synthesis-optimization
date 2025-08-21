@@ -1,0 +1,48 @@
+# Calculate p-value between each columns
+import seaborn as sns
+import matplotlib.pyplot as plt
+from scipy.stats import pearsonr, spearmanr
+
+Target_columns=df_new[['BLOCKS("FEHE").Q','STREAMS("RCT-IN").T','STREAMS("RCT-OUTH").T','Methanol selectivity %','CO2 conversion rate %','CO selectivity %']]
+def corr_pvalues(Target_columns, method="pearson"):
+    cols = Target_columns.columns
+    pval_matrix = pd.DataFrame(index=cols, columns=cols, dtype=float)
+    corr_matrix = pd.DataFrame(index=cols, columns=cols, dtype=float)
+
+    for i in range(len(cols)):
+        for j in range(len(cols)):
+            if i == j:
+                corr_matrix.iloc[i, j] = 1.0
+                pval_matrix.iloc[i, j] = 0.0
+            else:
+                x, y = Target_columns[cols[i]], Target_columns[cols[j]]
+                if method == "pearson":
+                    corr, pval = pearsonr(x, y)
+                elif method == "spearman":
+                    corr, pval = spearmanr(x, y)
+                else:
+                    raise ValueError("method must be 'pearson' or 'spearman'")
+                corr_matrix.iloc[i, j] = corr
+                pval_matrix.iloc[i, j] = pval
+    return corr_matrix, pval_matrix
+
+corr, pvals = corr_pvalues(Target_columns, method="pearson") 
+corr, pvals = corr_pvalues(Target_columns, method="spearman")
+
+# Visualization with seaaborn
+mask = pvals > 0.05  # Keep only significant correlations
+
+sns.heatmap(corr, mask=mask, annot=True, cmap="coolwarm")
+plt.show()
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# plot Hydrogen-input v.s Methanoll selectivity%
+fig, ax1 = plt.subplots(figsize=(10, 6))
+sns.lineplot(x='Time',y='STREAMS("SYNGAS").Fcn("H2")',color='blue',ax=ax1,data=df_new)
+ax1.set_ylabel('H2 input', color='blue')
+ax1.tick_params(axis='y', labelcolor='blue')
+
+ax2 = ax1.twinx()
+sns.lineplot(x='Time',y='CO selectivity %',color='red',ax=ax2,data=df_new)
+ax2.set_ylabel('CO selectivity %', color='red')
+ax2.tick_params(axis='y', labelcolor='red')
+plt.show()
