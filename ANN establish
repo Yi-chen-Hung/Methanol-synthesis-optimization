@@ -15,25 +15,21 @@ Target_df=df_new.drop(columns=['Time'])
 
 # Define target columns
 targets = ["Methanol selectivity %", "CO2 conversion rate %", "CO selectivity %"]
-
-# Replace this with your 15 selected features after correlation filtering
 selected_features = [
-    # Example placeholder, replace with your actual 15 columns
-    'BLOCKS("C1").Bpower',
- 'BLOCKS("HX1").T_in',
- 'BLOCKS("C2").Bpower',
- 'BLOCKS("C2").Pout',
- 'BLOCKS("FEHE").T_in_hot',
- 'BLOCKS("FEHE").T_in_cold',
- 'BLOCKS("FEHE").T_out_hot',
- 'BLOCKS("FEHE").T_out_cold',
- 'BLOCKS("FEHE").Q',
- 'B6.Output_',
- 'BLOCKS("REACTOR").P.Value(0)',
- 'BLOCKS("REACTOR").P_out',
- 'BLOCKS("SF-1").sf("VENT")',
- 'BLOCKS("FL1").level'
-    # ... add the rest until you have 15
+'BLOCKS("C1").Bpower',
+'BLOCKS("HX1").T_in',
+'BLOCKS("C2").Bpower',
+'BLOCKS("C2").Pout',
+'BLOCKS("FEHE").T_in_hot',
+'BLOCKS("FEHE").T_in_cold',
+'BLOCKS("FEHE").T_out_hot',
+'BLOCKS("FEHE").T_out_cold',
+'BLOCKS("FEHE").Q',
+'B6.Output_',
+'BLOCKS("REACTOR").P.Value(0)',
+'BLOCKS("REACTOR").P_out',
+'BLOCKS("SF-1").sf("VENT")',
+'BLOCKS("FL1").level'
 ]
 
 X = Target_df[selected_features]
