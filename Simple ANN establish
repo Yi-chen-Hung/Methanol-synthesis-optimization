@@ -1,99 +1,92 @@
-# Artifical Neural Network (Nonlinear ANN with 1 hidden layer, Levenberg-Marquardt algorithm, train/test sets, activation function: tanh)
+# Artifical Neural Network 
+#(ANN with 3 hidden layer, Multi-Layer Perceptron for regression, train/test sets, activation function: ReLU)
 import pandas as pd
 import numpy as np
-from scipy.optimize import least_squares
-from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.neural_network import MLPRegressor
+from sklearn.metrics import mean_squared_error, r2_score
+import matplotlib.pyplot as plt
 
-# ---------------------------
-# 1. Load dataset
-# ---------------------------
-input_cols = ['STREAMS("SYNGAS").Fcn("H2")','STREAMS("SYNGAS").Fcn("CO2")','BLOCKS("FEHE").Q']  # Training parameters
-output_col = 'Methanol selectivity %'        # Target parameter
+# =====================
+# 1. Load data
+# =====================
+Target_df=df_new.drop(columns=['Time'])
 
-X = df_new[input_cols].to_numpy()
-y = df_new[output_col].to_numpy(dtype=float)
+# Define target columns
+targets = ["Methanol selectivity %", "CO2 conversion rate %", "CO selectivity %"]
 
-# ---------------------------
-# 2. Train/test split
-# ---------------------------
+# Replace this with your 15 selected features after correlation filtering
+selected_features = [
+    # Example placeholder, replace with your actual 15 columns
+    'BLOCKS("C1").Bpower',
+ 'BLOCKS("HX1").T_in',
+ 'BLOCKS("C2").Bpower',
+ 'BLOCKS("C2").Pout',
+ 'BLOCKS("FEHE").T_in_hot',
+ 'BLOCKS("FEHE").T_in_cold',
+ 'BLOCKS("FEHE").T_out_hot',
+ 'BLOCKS("FEHE").T_out_cold',
+ 'BLOCKS("FEHE").Q',
+ 'B6.Output_',
+ 'BLOCKS("REACTOR").P.Value(0)',
+ 'BLOCKS("REACTOR").P_out',
+ 'BLOCKS("SF-1").sf("VENT")',
+ 'BLOCKS("FL1").level'
+    # ... add the rest until you have 15
+]
+
+X = Target_df[selected_features]
+y = Target_df[targets]
+
+# =====================
+# 2. Train/Test split
+# =====================
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42
 )
 
-# ---------------------------
-# 3. Define 1-hidden-layer ANN
-# ---------------------------
-def one_hidden_forward(p, X, d, h):
-    """
-    Forward pass for 1-hidden-layer ANN:
-    Input -> tanh(hidden) -> linear output
-    p: parameter vector(all network parameters packed into one vector)
-    d: input dimention
-    h: hidden dimention
-    """
-    # Unpack parameters
-    idx = 0
-    W1 = p[idx: idx + d*h].reshape(d, h); idx += d*h
-    b1 = p[idx: idx + h]; idx += h
-    W2 = p[idx: idx + h]; idx += h
-    b2 = p[idx]  # scalar bias
+# =====================
+# 3. Scaling
+# =====================
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
 
-    # Hidden layer
-    H = np.tanh(X @ W1 + b1)  # (m, h)
-
-    # Output layer (linear)
-    y_hat = H @ W2 + b2       # (m,)
-    return y_hat
-
-def residuals_nonlinear(p, X, y, d, h):
-    """
-    Residual vector for LM: y_hat - y
-    """
-    return one_hidden_forward(p, X, d, h) - y
-
-# ---------------------------
-# 4. Initialize parameters
-# ---------------------------
-d = X_train.shape[1]     # input dimension
-h = 5                    # number of hidden neurons (tuneable)
-
-# Total params: W1(d*h) + b1(h) + W2(h) + b2(1)
-n_params = d*h + h + h + 1
-p0 = np.random.randn(n_params) * 0.1  # small random init
-
-# ---------------------------
-# 5. Fit with LM (numerical Jacobian)
-# ---------------------------
-result = least_squares(
-    fun=residuals_nonlinear,
-    x0=p0, #initial guess for every parameter
-    args=(X_train, y_train, d, h),
-    method='lm'
+# =====================
+# 4. Build and Train MLPRegressor
+# =====================
+mlp = MLPRegressor(
+    hidden_layer_sizes=(64, 32, 16),  # 3 hidden layers
+    activation="relu",
+    solver="adam",
+    max_iter=2000,
+    random_state=42,
+    early_stopping=True
 )
 
-print("LM status:", result.message)
+mlp.fit(X_train_scaled, y_train)
 
-# ---------------------------
-# 6. Evaluate performance
-# ---------------------------
-# Train set
-y_train_pred = one_hidden_forward(result.x, X_train, d, h)
-mse_train = mean_squared_error(y_train, y_train_pred)
-r2_train  = r2_score(y_train, y_train_pred)
+# =====================
+# 5. Evaluate
+# =====================
+y_pred = mlp.predict(X_test_scaled)
 
-# Test set
-y_test_pred = one_hidden_forward(result.x, X_test, d, h)
-mse_test = mean_squared_error(y_test, y_test_pred)
-r2_test  = r2_score(y_test, y_test_pred)
+for i, target in enumerate(targets):
+    rmse = np.sqrt(mean_squared_error(y_test.iloc[:, i], y_pred[:, i]))
+    r2 = r2_score(y_test.iloc[:, i], y_pred[:, i])
+    print(f"{target}: RMSE={rmse:.3f}, R²={r2:.3f}")
 
-print("\nPerformance:")
-print(f"Train MSE: {mse_train:.4f}, Train R²: {r2_train:.4f}")
-print(f"Test  MSE: {mse_test:.4f}, Test  R²: {r2_test:.4f}")
-
-# ---------------------------
-# 7. Predict on new samples
-# ---------------------------
-X_new = df_new[input_cols].iloc[:3].to_numpy()
-y_new_pred = one_hidden_forward(result.x, X_new, d, h)
-print("\nPredictions for first 3 samples:", y_new_pred)
+# =====================
+# 6. Parity plots
+# =====================
+for i, target in enumerate(targets):
+    plt.figure(figsize=(5,5))
+    plt.scatter(y_test.iloc[:, i], y_pred[:, i], alpha=0.7)
+    plt.plot([y_test.iloc[:, i].min(), y_test.iloc[:, i].max()],
+             [y_test.iloc[:, i].min(), y_test.iloc[:, i].max()],
+             'r--')
+    plt.xlabel("Actual")
+    plt.ylabel("Predicted")
+    plt.title(f"Parity plot for {target}")
+    plt.show()
