@@ -32,9 +32,9 @@ Correlation Output:<br>
 
 # Simple ANN establishment
 ANN hyperparameters:<br>
-Algorithms : Multi-Layer Perceptron for regression<br>
-Number of hiddden layers : 3<br>
-Neuron numbers: (64, 32, 16)<br>
+Algorithms : Multi-Layer Perceptron for regression <br>
+Number of hiddden layers : 3 <br>
+Number of neurons in each layer: (64, 32, 16)<br>
 Activation function : ReLU <br>
 
 ⚠️ Try to adjust the hyperparameters of the ANN model so as to improve model's performance
