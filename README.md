@@ -40,7 +40,7 @@ Activation function : ReLU <br>
 ⚠️ Try to adjust the hyperparameters of the ANN model so as to improve model's performance
 
 Example code:<br>
-[](ANN%20establish.py).<br>
+[ANN establishment](ANN%20establish.py).<br>
 First Training Output:<br>
 ![Accuracy](images/ANN%20first%20run%20accuracy.png)
 ![Methanol selectivity](images/Methanol%20selectivity%20ANN%20parity.png)
