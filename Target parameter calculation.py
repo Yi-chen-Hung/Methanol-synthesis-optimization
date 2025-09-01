@@ -1,4 +1,3 @@
-```python
 # All methanol synthesis data reading
 import pandas as pd
 import numpy as np
