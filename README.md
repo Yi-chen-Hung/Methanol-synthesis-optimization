@@ -10,7 +10,7 @@ According to the methanol reaction equation and related formula
 <br>3.  x3 CO2 + H2 <--> CO + H2O (side reaction)
 
 Example:<br>
-[Target parameter calculation.py](Targetparametercalculation.py)<br>
+[Target parameter calculation.py](Target parameter calculation.py)<br>
 Outcome:<br>
 ![Target_parameter](images/Target_parameter_calculation.png)
 
