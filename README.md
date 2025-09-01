@@ -27,13 +27,17 @@ There are 14 potential columns that could be used as ANN model input parameters.
 
 Example code:<br>
 [Feature selection and correlation](Feature%20selection%20and%20correaltion.py)<br>
-Dataframe Output:<br>
+Correlation Output:<br>
 ![Target_correlation](images/Feature%20selection%20and%20correlation.png)
 
 # Simple ANN establishment
-ANN hyperparameters
+ANN hyperparameters:<br>
+Algorithms : Multi-Layer Perceptron for regression<br>
+Number of hiddden layers : 3<br>
+Neuron numbers: (64, 32, 16)<br>
+Activation function : ReLU <br>
 
-⚠️ Try to adjust the hidden laye,
+⚠️ Try to adjust the hyperparameters of the ANN model so as to improve model's performance
 
 Example code:<br>
 [](ANN%20establish.py).<br>
