@@ -20,8 +20,8 @@ Dataframe Output:<br>
 
 # Feature selection and correlation
 Since there are too many potential columns in the raw data that could be used as the input of an artificial neuron network model, so the feature selection is inevitably need to be deducted<br>
-I have ran over the correlation analysis between target parameter and all the 74 columns (Non-stream) and filter the one whose |r|>0.5.
-There are 14 potential columns that could be used as ANN model input parameters.
+I have ran over the correlation analysis between target parameter and all the 74 columns and filter the one whose |r|>0.5 (non-stream related).
+There are 14 potential columns that could be used in my ANN model input parameters.
 
 ⚠️ Principal component analysis (PCA) could be added
 
